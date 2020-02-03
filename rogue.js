@@ -1,10 +1,11 @@
-const title = 'MiniRogue', version = 'v0.0.1';
+const title = 'MiniRogue', version = 'v0.0.2';
 const charMap = {
-    wall: '#', player: '@', empty: ' ', door: '%',
+    wall: '#', player: '@', empty: ' ',
+    door: '%', lockedDoor: '%',
     uicorner: '+', uivert: '|', uihori: '-'
 };
 const colorMap = {
-    wall: '#888', door: '#b58451'
+    wall: '#888', door: '#b58451', lockedDoor: '#c00',
 };
 const screenWidth = 99, screenHeight = 34;
 var screen = [];
@@ -70,7 +71,7 @@ function drawText(x, x2, y, t, align = 0, color) {
     }
 }
 function drawHLine(x, x2, y, c, color) {
-    drawText(x, x2, y, c.repeat(x2 - x), 0, color);
+    drawText(Math.min(x, x2), Math.max(x, x2), y, c.repeat(Math.abs(x2 - x)), 0, color);
 }
 function drawGameHLine(x, x2, y, key) {
     let char = charMap[key];
@@ -78,7 +79,7 @@ function drawGameHLine(x, x2, y, key) {
     drawHLine(x, x2, y, char, color);
 }
 function drawVLine(x, y, y2, c, color) {
-    for (let i = y; i < y2; i++) {
+    for (let i = Math.min(y, y2); i < Math.max(y, y2); i++) {
         drawChar(x, i, c, color);
     }
 }
@@ -121,29 +122,8 @@ function generateRoom(previousRoom) {
         size: [0, 0],
         entrance: null,
         exit: [null, null],
-        previous: null,
-        realPos: () => {
-            let prevRealPos = newRoom.previous ? newRoom.previous.realPos() : [0, 0];
-            return newRoom.position.map((p, i) => p + prevRealPos[i]);
-        },
-        realDoorPos: () => {
-            let realPos = newRoom.realPos();
-            return [
-                (newRoom.exit[0] % 2 === 0
-                    ? realPos[0] + (newRoom.exit[0] > 1 ? newRoom.size[0] : 0)
-                    : realPos[0] + newRoom.exit[1] + 1),
-                (newRoom.exit[0] % 2 === 1
-                    ? realPos[1] + (newRoom.exit[0] > 1 ? newRoom.size[1] : 0)
-                    : realPos[1] + newRoom.exit[1] + 1)
-            ]
-        }
+        previous: null
     };
-
-    if (previousRoom) {
-        newRoom.previous = previousRoom;
-        let entranceDirection = (previousRoom.exit[0]+2) % 4;
-        newRoom.entrance = [entranceDirection, rand(1, newRoom.size[1 - (entranceDirection % 2)] - 1)];
-    }
 
     let height = rand(5, 15);
     let width = Math.floor(height * (2 + Math.random() * 2));
@@ -151,28 +131,64 @@ function generateRoom(previousRoom) {
         width, height
     ];
 
-    let exitDirection = rand(0, 3);
-    if (previousRoom && exitDirection >= newRoom.entrance) exitDirection++;
-    newRoom.exit = [exitDirection, rand(1, newRoom.size[1 - (exitDirection % 2)] - 1)];
-
     if (previousRoom) {
+        newRoom.previous = previousRoom;
+        let entranceDirection = (previousRoom.exit[0] + 2) % 4;
+        
         let corridorLength = rand(2, 8);
-        if (newRoom.entrance[0] % 2 === 0) {
-            let posMin = -newRoom.size[1] + 1;
-            let posMax = previousRoom.size[1] - 1;
-            let xPos = newRoom.entrance === 0 ? corridorLength + previousRoom.size[0] : -corridorLength - newRoom.size[0];
+        let prevDoorPos = previousRoom.exit[1];
+        if (entranceDirection % 2 === 0) {
+            let posMin = -newRoom.size[1] + prevDoorPos + 2;
+            let posMax = prevDoorPos - 1;
+            let xPos = entranceDirection === 0 ? corridorLength + previousRoom.size[0] : -corridorLength - newRoom.size[0];
             newRoom.position = [xPos, rand(posMin, posMax)];
         } else {
-            let posMin = -newRoom.size[0] + 1;
-            let posMax = previousRoom.size[0] - 1;
-            let yPos = newRoom.entrance === 3 ? corridorLength + previousRoom.size[1] : -corridorLength - newRoom.size[1];
+            let posMin = -newRoom.size[0] + prevDoorPos + 2;
+            let posMax = prevDoorPos - 1;
+            let yPos = entranceDirection === 1 ? corridorLength + previousRoom.size[1] : -corridorLength - newRoom.size[1];
             newRoom.position = [rand(posMin, posMax), yPos];
         }
+
+        newRoom.entrance = [entranceDirection, -(newRoom.position[1 - (entranceDirection % 2)] - prevDoorPos)];
     } else {
         newRoom.position = newRoom.size.map(p => -Math.floor(p / 2));
     }
 
+    let exitDirection = rand(0, 3);
+    if (previousRoom && exitDirection >= newRoom.entrance[0]) exitDirection = (exitDirection + 1) % 4;
+    newRoom.exit = [exitDirection, rand(1, newRoom.size[1 - (exitDirection % 2)] - 1)];
+
     return newRoom;
+}
+
+function getRealRoomPos(room) {
+    let previousRoomPos = room.previous ? getRealRoomPos(room.previous) : [0, 0];
+    return room.position.map((p, i) => p + previousRoomPos[i]);
+}
+
+function getRealRoomExitPos(room) {
+    let realPos = getRealRoomPos(room);
+    return [
+        (room.exit[0] % 2 === 0
+            ? realPos[0] + (room.exit[0] > 1 ? room.size[0] : 0)
+            : realPos[0] + room.exit[1] + 1),
+        (room.exit[0] % 2 === 1
+            ? realPos[1] + (room.exit[0] > 1 ? room.size[1] : 0)
+            : realPos[1] + room.exit[1] + 1)
+    ]
+}
+
+function getRealRoomEntrancePos(room) {
+    if (!room.entrance) return;
+    let realPos = getRealRoomPos(room);
+    return [
+        (room.entrance[0] % 2 === 0
+            ? realPos[0] + (room.entrance[0] > 1 ? room.size[0] : 0)
+            : realPos[0] + room.entrance[1] + 1),
+        (room.entrance[0] % 2 === 1
+            ? realPos[1] + (room.entrance[0] > 1 ? room.size[1] : 0)
+            : realPos[1] + room.entrance[1] + 1)
+    ]
 }
 
 function drawUI() {
@@ -192,25 +208,45 @@ function drawUI() {
     drawText(screenWidth - 10, screenWidth - 1, screenHeight - 2, `DEF: ${player.def}`);
 }
 
+function mapPosToScreenPos(pos) {
+    let playerScreenPos = [1 + Math.floor((screenWidth - 2) / 2), 5 + Math.floor((screenHeight - 9) / 2)];
+
+    return pos.map((p, i) => playerScreenPos[i] + p - player.position[i]);
+}
+
 function drawMap() {
-    let mapOffset = [1, 5];
-    let mapWidth = screenWidth - 2;
-    let mapHeight = screenHeight - 9;
+    fillRect(1, 5, screenWidth - 2, screenHeight - 9, charMap.empty);
 
-    fillRect(mapOffset[0], mapOffset[1], mapWidth, mapHeight, charMap.empty);
-
-    let playerScreenPos = [mapOffset[0] + Math.floor(mapWidth / 2), mapOffset[1] + Math.floor(mapHeight / 2)];
-
-    for (let i = 0; i < rooms.length; i++) {
+    let firstRoom = rooms.length > 1 ? rooms.length - 2 : 0;
+    for (let i = firstRoom; i < rooms.length; i++) {
+        let realRoomPos = mapPosToScreenPos(getRealRoomPos(rooms[i]));
         drawGameBox(
-            playerScreenPos[0] + rooms[i].position[0] - player.position[0],
-            playerScreenPos[1] + rooms[i].position[1] - player.position[1],
+            realRoomPos[0], realRoomPos[1],
             rooms[i].size[0], rooms[i].size[1], 'wall');
-        let doorPos = rooms[i].realDoorPos();
+        let entrancePos = getRealRoomEntrancePos(rooms[i]);
+        if (entrancePos) {
+            entrancePos = mapPosToScreenPos(entrancePos);
+            drawGameChar(
+                entrancePos[0], entrancePos[1],
+                i === rooms.length - 1 ? 'empty' : 'lockedDoor'
+            );
+            if (i === rooms.length - 1 && i > 0) {
+                let corridorStart = mapPosToScreenPos(getRealRoomExitPos(rooms[i - 1]));
+                let corridorEnd = entrancePos;
+                let horizontal = corridorStart[1] === corridorEnd[1];
+                if (horizontal) {
+                    drawGameHLine(corridorStart[0], corridorEnd[0], corridorStart[1] - 1, 'wall');
+                    drawGameHLine(corridorStart[0], corridorEnd[0], corridorStart[1] + 1, 'wall');
+                } else {
+                    drawGameVLine(corridorStart[0] - 1, corridorStart[1], corridorEnd[1], 'wall');
+                    drawGameVLine(corridorStart[0] + 1, corridorStart[1], corridorEnd[1], 'wall');
+                }
+            }
+        }
+        let exitPos = mapPosToScreenPos(getRealRoomExitPos(rooms[i]));
         drawGameChar(
-            playerScreenPos[0] + doorPos[0] - player.position[0],
-            playerScreenPos[1] + doorPos[1] - player.position[1],
-            'door'
+            exitPos[0], exitPos[1],
+            i === rooms.length - 1 ? 'door' : 'empty'
         );
     }
 
@@ -218,11 +254,14 @@ function drawMap() {
 }
 
 function checkCollision(pos) {
-    for (let i = 0; i < rooms.length; i++) {
+    let firstRoom = rooms.length > 1 ? rooms.length - 2 : 0;
+    for (let i = firstRoom; i < rooms.length; i++) {
         let r = rooms[i];
-        let roomPos = r.realPos();
-        let doorPos = r.realDoorPos();
-        if (pos[0] === doorPos[0] && pos[1] === doorPos[1]) continue;
+        let roomPos = getRealRoomPos(r);
+        let exitPos = getRealRoomExitPos(r);
+        if (pos[0] === exitPos[0] && pos[1] === exitPos[1]) continue;
+        let entrancePos = getRealRoomEntrancePos(r);
+        if (entrancePos && pos[0] === entrancePos[0] && pos[1] === entrancePos[1]) continue;
         if ((pos[0] === roomPos[0] || pos[0] === roomPos[0] + r.size[0]) && pos[1] >= roomPos[1] && pos[1] < roomPos[1] + r.size[1]) return true;
         if ((pos[1] === roomPos[1] || pos[1] === roomPos[1] + r.size[1]) && pos[0] >= roomPos[0] && pos[0] < roomPos[0] + r.size[0]) return true;
     }
@@ -268,11 +307,10 @@ function drawGame() {
 }
 
 function updateGame() {
-    if (rooms.length === 1) {
-        let doorPos = rooms[0].realDoorPos();
-        if (player.position[0] === doorPos[0] && player.position[1] === doorPos[1]) {
-            rooms.push(generateRoom(rooms[0]));
-        }
+    let doorPos = getRealRoomExitPos(rooms[rooms.length - 1]);
+    if (player.position[0] === doorPos[0] && player.position[1] === doorPos[1]) {
+        rooms.push(generateRoom(rooms[rooms.length - 1]));
+        player.currentRoom++;
     }
 }
 
