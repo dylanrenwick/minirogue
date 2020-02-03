@@ -319,7 +319,26 @@ function updateGame() {
         switch (entities[i].type) {
             case 0:
                 if (player.position[0] === entities[i].position[0] && player.position[1] === entities[i].position[1]) {
-                    // TODO: Pickup item
+                    let pickupType = rand(0, 4);
+                    switch(pickupType) {
+                        case 0:
+                            tooltip = "You found a better magical amulet!\nMax HP + 1";
+                            player.maxHealth++;
+                            break;
+                        case 1:
+                            tooltip = "You found a better sword!\nATK + 1";
+                            player.atk++;
+                            break;
+                        case 2:
+                            tooltip = "You found better armor!\nDEF + 1";
+                            player.def++;
+                            break;
+                        case 3:
+                            tooltip = "You found a health potion!\n25% HP restored";
+                            player.health = Math.min(player.maxHealth, player.health + Math.round(player.maxHealth / 4));
+                            break;
+                    }
+                    entitiesToRemove.push(entities[i]);
                 }
                 break;
             case 1:
