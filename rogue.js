@@ -122,7 +122,7 @@ function generateRoom(previousRoom) {
         exit: [null, null],
         previous: null
     };
-    let height = rand(5, 15);
+    let height = rand(5, 10);
     let width = Math.floor(height * (2 + Math.random() * 2));
     newRoom.size = [width, height];
     if (previousRoom) {
