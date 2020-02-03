@@ -135,23 +135,41 @@ function generateRoom(previousRoom) {
             let yPos = entranceDirection === 1 ? corridorLength + previousRoom.size[1] : -corridorLength - newRoom.size[1];
             newRoom.position = [rand(posMin, posMax), yPos];
         }
+        newRoom.realPos = newRoom.position.map((p, i) => p + previousRoom.realPos[i]);
         newRoom.entrance = [entranceDirection, -(newRoom.position[1 - (entranceDirection % 2)] - prevDoorPos)];
+        newRoom.realEntrancePos = [
+            (newRoom.entrance[0] % 2 === 0
+                ? newRoom.realPos[0] + (newRoom.entrance[0] > 1 ? newRoom.size[0] : 0)
+                : newRoom.realPos[0] + newRoom.entrance[1] + 1),
+            (newRoom.entrance[0] % 2 === 1
+                ? newRoom.realPos[1] + (newRoom.entrance[0] > 1 ? newRoom.size[1] : 0)
+                : newRoom.realPos[1] + newRoom.entrance[1] + 1)
+        ]
         let features = Math.max(rand(0, 2) * (1 + Math.floor((newRoom.size[0] * newRoom.size[1] / 250) ** 2)), 1);
         for (let i = 0; i < features; i++) {
             generateFeature(newRoom);
         }
     } else {
         newRoom.position = newRoom.size.map(p => -Math.floor(p / 2));
+        newRoom.realPos = newRoom.position;
     }
     let exitDirection = rand(0, 3);
     if (previousRoom && exitDirection >= newRoom.entrance[0]) exitDirection = (exitDirection + 1) % 4;
     newRoom.exit = [exitDirection, rand(1, newRoom.size[1 - (exitDirection % 2)] - 1)];
+    newRoom.realExitPos = [
+        (newRoom.exit[0] % 2 === 0
+            ? newRoom.realPos[0] + (newRoom.exit[0] > 1 ? newRoom.size[0] : 0)
+            : newRoom.realPos[0] + newRoom.exit[1] + 1),
+        (newRoom.exit[0] % 2 === 1
+            ? newRoom.realPos[1] + (newRoom.exit[0] > 1 ? newRoom.size[1] : 0)
+            : newRoom.realPos[1] + newRoom.exit[1] + 1)
+    ];
     return newRoom;
 }
 
 function generateFeature(room) {
     let entity = {
-        position: randInRect(getRealRoomPos(room), room.size),
+        position: randInRect(room.realPos, room.size),
         update: null,
         charKey: 'empty',
         room: room
@@ -167,36 +185,6 @@ function generateFeature(room) {
             break;
     }
     entities.push(entity);
-}
-
-function getRealRoomPos(room) {
-    let previousRoomPos = room.previous ? getRealRoomPos(room.previous) : [0, 0];
-    return room.position.map((p, i) => p + previousRoomPos[i]);
-}
-
-function getRealRoomExitPos(room) {
-    let realPos = getRealRoomPos(room);
-    return [
-        (room.exit[0] % 2 === 0
-            ? realPos[0] + (room.exit[0] > 1 ? room.size[0] : 0)
-            : realPos[0] + room.exit[1] + 1),
-        (room.exit[0] % 2 === 1
-            ? realPos[1] + (room.exit[0] > 1 ? room.size[1] : 0)
-            : realPos[1] + room.exit[1] + 1)
-    ]
-}
-
-function getRealRoomEntrancePos(room) {
-    if (!room.entrance) return;
-    let realPos = getRealRoomPos(room);
-    return [
-        (room.entrance[0] % 2 === 0
-            ? realPos[0] + (room.entrance[0] > 1 ? room.size[0] : 0)
-            : realPos[0] + room.entrance[1] + 1),
-        (room.entrance[0] % 2 === 1
-            ? realPos[1] + (room.entrance[0] > 1 ? room.size[1] : 0)
-            : realPos[1] + room.entrance[1] + 1)
-    ]
 }
 
 function drawUI() {
@@ -224,11 +212,11 @@ function drawMap() {
     fillRect(1, 5, screenWidth - 2, screenHeight - 9, charMap.empty);
     let firstRoom = rooms.length > 1 ? rooms.length - 2 : 0;
     for (let i = firstRoom; i < rooms.length; i++) {
-        let realRoomPos = mapPosToScreenPos(getRealRoomPos(rooms[i]));
+        let realRoomPos = mapPosToScreenPos(rooms[i].realPos);
         drawGameBox(
             realRoomPos[0], realRoomPos[1],
             rooms[i].size[0], rooms[i].size[1], 'wall');
-        let entrancePos = getRealRoomEntrancePos(rooms[i]);
+        let entrancePos = rooms[i].realEntrancePos;
         if (entrancePos) {
             entrancePos = mapPosToScreenPos(entrancePos);
             drawGameChar(
@@ -236,7 +224,7 @@ function drawMap() {
                 i === rooms.length - 1 ? 'empty' : 'lockedDoor'
             );
             if (i === rooms.length - 1 && i > 0) {
-                let corridorStart = mapPosToScreenPos(getRealRoomExitPos(rooms[i - 1]));
+                let corridorStart = mapPosToScreenPos(rooms[i - 1].realExitPos);
                 let corridorEnd = entrancePos;
                 let horizontal = corridorStart[1] === corridorEnd[1];
                 if (horizontal) {
@@ -248,7 +236,7 @@ function drawMap() {
                 }
             }
         }
-        let exitPos = mapPosToScreenPos(getRealRoomExitPos(rooms[i]));
+        let exitPos = mapPosToScreenPos(rooms[i].realExitPos);
         drawGameChar(
             exitPos[0], exitPos[1],
             i === rooms.length - 1 ? 'door' : 'empty'
@@ -265,15 +253,17 @@ function drawEntities() {
     }
 }
 
-function checkCollision(pos) {
+function checkCollision(pos, blockDoors = false) {
     let firstRoom = rooms.length > 1 ? rooms.length - 2 : 0;
     for (let i = firstRoom; i < rooms.length; i++) {
         let r = rooms[i];
-        let roomPos = getRealRoomPos(r);
-        let exitPos = getRealRoomExitPos(r);
-        if (pos[0] === exitPos[0] && pos[1] === exitPos[1]) continue;
-        let entrancePos = getRealRoomEntrancePos(r);
-        if (entrancePos && pos[0] === entrancePos[0] && pos[1] === entrancePos[1]) continue;
+        let roomPos = r.realPos;
+        if (!blockDoors) {
+            let exitPos = r.realExitPos;
+            if (pos[0] === exitPos[0] && pos[1] === exitPos[1]) continue;
+            let entrancePos = r.realEntrancePos;
+            if (entrancePos && pos[0] === entrancePos[0] && pos[1] === entrancePos[1]) continue;
+        }
         if ((pos[0] === roomPos[0] || pos[0] === roomPos[0] + r.size[0]) && pos[1] >= roomPos[1] && pos[1] < roomPos[1] + r.size[1]) return true;
         if ((pos[1] === roomPos[1] || pos[1] === roomPos[1] + r.size[1]) && pos[0] >= roomPos[0] && pos[0] < roomPos[0] + r.size[0]) return true;
     }
@@ -319,7 +309,7 @@ function drawGame() {
 }
 
 function updateGame() {
-    let doorPos = getRealRoomExitPos(rooms[rooms.length - 1]);
+    let doorPos = rooms[rooms.length - 1].realExitPos;
     if (player.position[0] === doorPos[0] && player.position[1] === doorPos[1]) {
         rooms.push(generateRoom(rooms[rooms.length - 1]));
         player.currentRoom++;
