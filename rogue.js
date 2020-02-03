@@ -1,4 +1,4 @@
-const title = 'MiniRogue', version = 'v0.0.3';
+const title = 'MiniRogue', version = 'v0.0.4';
 const charMap = {
     wall: '#', player: '@', empty: ' ', enemy: '&',
     door: '%', lockedDoor: '%', item: '$',
