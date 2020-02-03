@@ -29,6 +29,7 @@ var player = {
     health: 0, maxHealth: 10,
     atk: 1, def: 0
 };
+var tooltip = "";
 
 const rand = (min, max) => Math.floor(Math.random() * (max - min) + min);
 const randInRect = (pos, size) => [rand(pos[0] + 1, pos[0] + size[0] - 1), rand(pos[1] + 1, pos[1] + size[1] - 1)];
@@ -244,6 +245,15 @@ function draw() {
     drawText(6, 12, screenHeight - 3, `${player.health}/${player.maxHealth}`, 0, hpColor)
     drawText(screenWidth - 10, screenWidth - 1, screenHeight - 3, `ATK: ${player.atk}`);
     drawText(screenWidth - 10, screenWidth - 1, screenHeight - 2, `DEF: ${player.def}`);
+
+    if (tooltip.length > 0) {
+        fillBox(4, screenHeight - 9, screenWidth - 8, 4, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
+        let lines = tooltip.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            drawText(5, screenWidth - 10, screenHeight + (lines.length === 1 ? -7 : -8 + i), lines[i], 1);
+        }
+        tooltip = "";
+    }
 
     updateScreen();
 }
