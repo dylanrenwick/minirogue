@@ -8,6 +8,10 @@ const colorMap = {
     wall: '#888', door: '#b58451', lockedDoor: '#c00',
     item: '#fd0', enemy: '#f00'
 };
+const entityWeights = [
+    { type: 0, key: 'item', weight: 2 },
+    { type: 1, key: 'enemy', weight: 3}
+];
 const screenWidth = 99, screenHeight = 34;
 var screen = [];
 for (let y = 0; y < screenHeight; y++) {
@@ -155,17 +159,15 @@ function generateRoom(previousRoom) {
                 room: newRoom,
                 type: null
             };
-            let featureType = rand(1,4);
-            switch(featureType) {
-                case 1:
-                    entity.type = 0;
-                    entity.charKey = 'item';
+            let weightTotals = entityWeights.map(e => e.weight).reduce((a, b) => a + b, 0);
+            let generatedWeight = rand(0, weightTotals) + 1;
+            for (let i = 0, runningTotal = 0; i < entityWeights.length; i++) {
+                if (runningTotal + generatedWeight <= entityWeights[i].weight) {
+                    entity.type = entityWeights[i].type;
+                    entity.charKey = entityWeights[i].key;
                     break;
-                case 2:
-                case 3:
-                    entity.type = 1;
-                    entity.charKey = 'enemy';
-                    break;
+                }
+                runningTotal += weightTotals[i].weight;
             }
             entities.push(entity);
         }
