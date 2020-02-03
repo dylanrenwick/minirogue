@@ -21,6 +21,7 @@ var entities = [];
 
 var player = {
     position: [0, 0],
+    screenPos: [1 + Math.floor((screenWidth - 2) / 2), 5 + Math.floor((screenHeight - 9) / 2)],
     health: 0, maxHealth: 10,
     atk: 1, def: 0
 };
@@ -147,7 +148,26 @@ function generateRoom(previousRoom) {
         ]
         let features = Math.max(rand(0, 2) * (1 + Math.floor((newRoom.size[0] * newRoom.size[1] / 250) ** 2)), 1);
         for (let i = 0; i < features; i++) {
-            generateFeature(newRoom);
+            let entity = {
+                position: randInRect(newRoom.realPos, newRoom.size),
+                update: null,
+                charKey: 'empty',
+                room: newRoom,
+                type: null
+            };
+            let featureType = rand(1,4);
+            switch(featureType) {
+                case 1:
+                    entity.type = 0;
+                    entity.charKey = 'item';
+                    break;
+                case 2:
+                case 3:
+                    entity.type = 1;
+                    entity.charKey = 'enemy';
+                    break;
+            }
+            entities.push(entity);
         }
     } else {
         newRoom.position = newRoom.size.map(p => -Math.floor(p / 2));
@@ -167,51 +187,23 @@ function generateRoom(previousRoom) {
     return newRoom;
 }
 
-function generateFeature(room) {
-    let entity = {
-        position: randInRect(room.realPos, room.size),
-        update: null,
-        charKey: 'empty',
-        room: room,
-        type: null
-    };
-    let featureType = rand(1,4);
-    switch(featureType) {
-        case 1:
-            entity.type = 0;
-            entity.charKey = 'item';
-            break;
-        case 2:
-        case 3:
-            entity.type = 1;
-            entity.charKey = 'enemy';
-            break;
-    }
-    entities.push(entity);
-}
-
-function mapPosToScreenPos(pos) {
-    let playerScreenPos = [1 + Math.floor((screenWidth - 2) / 2), 5 + Math.floor((screenHeight - 9) / 2)];
-    return pos.map((p, i) => playerScreenPos[i] + p - player.position[i]);
-}
-
 function draw() {
     fillRect(1, 5, screenWidth - 2, screenHeight - 9, charMap.empty);
     let firstRoom = rooms.length > 1 ? rooms.length - 2 : 0;
     for (let i = firstRoom; i < rooms.length; i++) {
-        let realRoomPos = mapPosToScreenPos(rooms[i].realPos);
+        let realRoomPos = rooms[i].realPos.map((p, i) => player.screenPos[i] + p - player.position[i]);;
         drawGameBox(
             realRoomPos[0], realRoomPos[1],
             rooms[i].size[0], rooms[i].size[1], 'wall');
         let entrancePos = rooms[i].realEntrancePos;
         if (entrancePos) {
-            entrancePos = mapPosToScreenPos(entrancePos);
+            entrancePos = entrancePos.map((p, i) => player.screenPos[i] + p - player.position[i]);;
             drawGameChar(
                 entrancePos[0], entrancePos[1],
                 i === rooms.length - 1 ? 'empty' : 'lockedDoor'
             );
             if (i === rooms.length - 1 && i > 0) {
-                let corridorStart = mapPosToScreenPos(rooms[i - 1].realExitPos);
+                let corridorStart = rooms[i - 1].realExitPos.map((p, i) => player.screenPos[i] + p - player.position[i]);;
                 let corridorEnd = entrancePos;
                 let horizontal = corridorStart[1] === corridorEnd[1];
                 if (horizontal) {
@@ -223,7 +215,7 @@ function draw() {
                 }
             }
         }
-        let exitPos = mapPosToScreenPos(rooms[i].realExitPos);
+        let exitPos = rooms[i].realExitPos.map((p, i) => player.screenPos[i] + p - player.position[i]);;
         drawGameChar(
             exitPos[0], exitPos[1],
             i === rooms.length - 1 ? 'door' : 'empty'
@@ -233,7 +225,7 @@ function draw() {
     let playerScreenPos = [1 + Math.floor((screenWidth - 2) / 2), 5 + Math.floor((screenHeight - 9) / 2)];
     drawGameChar(playerScreenPos[0], playerScreenPos[1], 'player');
     for (let i = 0; i < entities.length; i++) {
-        let entityPos = mapPosToScreenPos(entities[i].position);
+        let entityPos = entities[i].position.map((p, i) => player.screenPos[i] + p - player.position[i]);;
         drawGameChar(entityPos[0], entityPos[1], entities[i].charKey);
     }
 
