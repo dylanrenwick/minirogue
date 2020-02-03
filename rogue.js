@@ -172,15 +172,18 @@ function generateFeature(room) {
         position: randInRect(room.realPos, room.size),
         update: null,
         charKey: 'empty',
-        room: room
+        room: room,
+        type: null
     };
     let featureType = rand(1,4);
     switch(featureType) {
         case 1:
+            entity.type = 0;
             entity.charKey = 'item';
             break;
         case 2:
         case 3:
+            entity.type = 1;
             entity.charKey = 'enemy';
             break;
     }
@@ -313,6 +316,31 @@ function updateGame() {
     if (player.position[0] === doorPos[0] && player.position[1] === doorPos[1]) {
         rooms.push(generateRoom(rooms[rooms.length - 1]));
         player.currentRoom++;
+    }
+
+    entities = entities.filter(e => rooms.indexOf(e.room) !== -1 && rooms.indexOf(e.room) >= rooms.length - 2);
+    for (let i = 0; i < entities.length; i++) {
+        switch (entities[i].type) {
+            case 0:
+                if (player.position[0] === entities[i].position[0] && player.position[1] === entities[i].position[1]) {
+                    // TODO: Pickup item
+                }
+                break;
+            case 1:
+                if (entities[i].direction === undefined) entities[i].direction = rand(0, 4);
+                let newPos = [entities[i].position[0], entities[i].position[1]];
+                newPos[entities[i].direction % 2] += Math.floor(entities[i].direction / 2) * 2 - 1;
+                if (!checkCollision(newPos, true)) {
+                    console.log(`moving ${entities[i].position} in direction ${entities[i].direction}`);
+                    entities[i].position = newPos;
+                } else {
+                    console.log(`switching direction`);
+                    entities[i].direction = (entities[i].direction + 2) % 4;
+                    console.log(`moving ${entities[i].position} in direction ${entities[i].direction}`);
+                    entities[i].position[entities[i].direction % 2] += Math.floor(entities[i].direction / 2) * 2 - 1;
+                }
+                break;
+        }
     }
 }
 
