@@ -314,6 +314,7 @@ function updateGame() {
     }
 
     entities = entities.filter(e => rooms.indexOf(e.room) !== -1 && rooms.indexOf(e.room) >= rooms.length - 2);
+    let entitiesToRemove = [];
     for (let i = 0; i < entities.length; i++) {
         switch (entities[i].type) {
             case 0:
@@ -336,6 +337,11 @@ function updateGame() {
                 }
                 break;
         }
+    }
+    for (let i = 0; i < entitiesToRemove.length; i++) {
+        let index = entities.indexOf(entitiesToRemove[i]);
+        if (index < 0) continue;
+        entities.splice(index, 1);
     }
 }
 
