@@ -167,7 +167,7 @@ function generateRoom(previousRoom) {
                     entity.charKey = entityWeights[i].key;
                     break;
                 }
-                runningTotal += weightTotals[i].weight;
+                runningTotal += entityWeights[i].weight;
             }
             entities.push(entity);
         }
