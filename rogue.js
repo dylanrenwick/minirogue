@@ -346,12 +346,9 @@ function updateGame() {
                 let newPos = [entities[i].position[0], entities[i].position[1]];
                 newPos[entities[i].direction % 2] += Math.floor(entities[i].direction / 2) * 2 - 1;
                 if (!checkCollision(newPos, true)) {
-                    console.log(`moving ${entities[i].position} in direction ${entities[i].direction}`);
                     entities[i].position = newPos;
                 } else {
-                    console.log(`switching direction`);
                     entities[i].direction = (entities[i].direction + 2) % 4;
-                    console.log(`moving ${entities[i].position} in direction ${entities[i].direction}`);
                     entities[i].position[entities[i].direction % 2] += Math.floor(entities[i].direction / 2) * 2 - 1;
                 }
                 break;
