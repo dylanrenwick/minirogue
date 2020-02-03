@@ -247,10 +247,10 @@ function draw() {
     drawText(screenWidth - 20, screenWidth - 11, screenHeight - 2, `DEF: ${player.def}`);
 
     if (tooltip.length > 0) {
-        fillBox(4, screenHeight - 9, screenWidth - 8, 4, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
+        fillBox(4, screenHeight - 8, screenWidth - 8, 4, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
         let lines = tooltip.split('\n');
         for (let i = 0; i < lines.length; i++) {
-            drawText(5, screenWidth - 5, screenHeight + (lines.length === 1 ? -7 : -8 + i), lines[i].trim(), 1);
+            drawText(5, screenWidth - 5, screenHeight + (lines.length === 1 ? -6 : -7 + i), lines[i].trim(), 1);
         }
         tooltip = "";
     }
