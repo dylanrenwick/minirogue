@@ -261,6 +261,7 @@ function draw() {
 }
 
 function checkCollision(pos, blockDoors = false) {
+    if (pos[0] === player.position[0] && pos[1] === player.position[1]) return true;
     let firstRoom = rooms.length > 1 ? rooms.length - 2 : 0;
     for (let i = firstRoom; i < rooms.length; i++) {
         let r = rooms[i];
