@@ -1,12 +1,13 @@
 const title = 'MiniRogue', version = 'v0.0.4';
 const charMap = {
-    wall: '#', player: '@', empty: ' ', enemy: '&',
-    door: '%', lockedDoor: '%', item: '$',
+    wall: '#', player: '@', empty: ' ',
+    enemy: '&', item: '$',
+    door: '%', lockedDoor: '%', disabledDoor: '%',
     uicorner: '+', uivert: '|', uihori: '-'
 };
 const colorMap = {
-    wall: '#888', door: '#b58451', lockedDoor: '#c00',
-    item: '#fd0', enemy: '#f00'
+    wall: '#888', item: '#fd0', enemy: '#f00',
+    door: '#b58451', lockedDoor: '#c00', disabledDoor: '#444'
 };
 const entityWeights = [
     { type: 0, key: 'item', weight: 2 },
@@ -203,7 +204,7 @@ function draw() {
             entrancePos = entrancePos.map((p, i) => player.screenPos[i] + p - player.position[i]);;
             drawGameChar(
                 entrancePos[0], entrancePos[1],
-                i === rooms.length - 1 ? 'empty' : 'lockedDoor'
+                i === rooms.length - 1 ? 'empty' : 'disabledDoor'
             );
             if (i === rooms.length - 1 && i > 0) {
                 let corridorStart = rooms[i - 1].realExitPos.map((p, i) => player.screenPos[i] + p - player.position[i]);;
@@ -221,7 +222,7 @@ function draw() {
         let exitPos = rooms[i].realExitPos.map((p, i) => player.screenPos[i] + p - player.position[i]);;
         drawGameChar(
             exitPos[0], exitPos[1],
-            i === rooms.length - 1 ? 'door' : 'empty'
+            i === rooms.length - 1 ? (entities.filter(e => e.type === 1).length > 0 ? 'lockedDoor' : 'door') : 'empty'
         );
     }
     
