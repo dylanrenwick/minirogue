@@ -1,11 +1,12 @@
 const title = 'MiniRogue', version = 'v0.0.2';
 const charMap = {
-    wall: '#', player: '@', empty: ' ',
-    door: '%', lockedDoor: '%',
+    wall: '#', player: '@', empty: ' ', enemy: '&',
+    door: '%', lockedDoor: '%', item: '$',
     uicorner: '+', uivert: '|', uihori: '-'
 };
 const colorMap = {
     wall: '#888', door: '#b58451', lockedDoor: '#c00',
+    item: '#fd0', enemy: '#f00'
 };
 const screenWidth = 99, screenHeight = 34;
 var screen = [];
@@ -16,6 +17,7 @@ for (let y = 0; y < screenHeight; y++) {
     }
 }
 var rooms = [];
+var entities = [];
 
 var player = {
     position: [0, 0],
@@ -24,10 +26,8 @@ var player = {
 };
 
 const rand = (min, max) => Math.floor(Math.random() * (max - min) + min);
-
-function updateScreen() {
-    document.getElementById('canv').innerHTML = screen.map(r => r.join('')).join('\n');
-}
+const randInRect = (pos, size) => [rand(pos[0] + 1, pos[0] + size[0] - 1), rand(pos[1] + 1, pos[1] + size[1] - 1)];
+const updateScreen = () => document.getElementById('canv').innerHTML = screen.map(r => r.join('')).join('\n');
 
 function drawChar(x, y, c, color) {
     if (x >= screenWidth || y >= screenHeight || x < 0 || y < 0) return;
@@ -49,9 +49,7 @@ function drawChars(coords, c, color) {
     }
 }
 function drawGameChar(x, y, key) {
-    let char = charMap[key];
-    let color = colorMap[key];
-    drawChar(x, y, char, color);
+    drawChar(x, y, charMap[key], colorMap[key]);
 }
 function drawText(x, x2, y, t, align = 0, color) {
     let areaWidth = x2 - x;
@@ -74,9 +72,7 @@ function drawHLine(x, x2, y, c, color) {
     drawText(Math.min(x, x2), Math.max(x, x2), y, c.repeat(Math.abs(x2 - x)), 0, color);
 }
 function drawGameHLine(x, x2, y, key) {
-    let char = charMap[key];
-    let color = colorMap[key];
-    drawHLine(x, x2, y, char, color);
+    drawHLine(x, x2, y, charMap[key], colorMap[key]);
 }
 function drawVLine(x, y, y2, c, color) {
     for (let i = Math.min(y, y2); i < Math.max(y, y2); i++) {
@@ -84,9 +80,7 @@ function drawVLine(x, y, y2, c, color) {
     }
 }
 function drawGameVLine(x, y, y2, key) {
-    let char = charMap[key];
-    let color = colorMap[key];
-    drawVLine(x, y, y2, char, color);
+    drawVLine(x, y, y2, charMap[key], colorMap[key]);
 }
 function drawBox(x, y, w, h, corner, vert, hori, color) {
     if (vert === undefined) {
@@ -102,9 +96,7 @@ function drawBox(x, y, w, h, corner, vert, hori, color) {
     drawVLine(x + w, y + 1, y + h, vert, color);
 }
 function drawGameBox(x, y, w, h, key) {
-    let char = charMap[key];
-    let color = colorMap[key];
-    drawBox(x, y, w, h, char, undefined, undefined, color)
+    drawBox(x, y, w, h, charMap[key], undefined, undefined, colorMap[key])
 }
 function fillRect(x, y, w, h, c) {
     for (let i = y; i < y + h; i++) {
@@ -124,17 +116,12 @@ function generateRoom(previousRoom) {
         exit: [null, null],
         previous: null
     };
-
     let height = rand(5, 15);
     let width = Math.floor(height * (2 + Math.random() * 2));
-    newRoom.size = [
-        width, height
-    ];
-
+    newRoom.size = [width, height];
     if (previousRoom) {
         newRoom.previous = previousRoom;
-        let entranceDirection = (previousRoom.exit[0] + 2) % 4;
-        
+        let entranceDirection = (previousRoom.exit[0] + 2) % 4;\
         let corridorLength = rand(2, 8);
         let prevDoorPos = previousRoom.exit[1];
         if (entranceDirection % 2 === 0) {
@@ -148,17 +135,38 @@ function generateRoom(previousRoom) {
             let yPos = entranceDirection === 1 ? corridorLength + previousRoom.size[1] : -corridorLength - newRoom.size[1];
             newRoom.position = [rand(posMin, posMax), yPos];
         }
-
         newRoom.entrance = [entranceDirection, -(newRoom.position[1 - (entranceDirection % 2)] - prevDoorPos)];
+        let features = Math.max(rand(0, 2) * (1 + Math.floor((newRoom.size[0] * newRoom.size[1] / 250) ** 2)), 1);
+        for (let i = 0; i < features; i++) {
+            generateFeature(newRoom);
+        }
     } else {
         newRoom.position = newRoom.size.map(p => -Math.floor(p / 2));
     }
-
     let exitDirection = rand(0, 3);
     if (previousRoom && exitDirection >= newRoom.entrance[0]) exitDirection = (exitDirection + 1) % 4;
     newRoom.exit = [exitDirection, rand(1, newRoom.size[1 - (exitDirection % 2)] - 1)];
-
     return newRoom;
+}
+
+function generateFeature(room) {
+    let entity = {
+        position: randInRect(getRealRoomPos(room), room.size),
+        update: null,
+        charKey: 'empty',
+        room: room
+    };
+    let featureType = rand(1,4);
+    switch(featureType) {
+        case 1:
+            entity.charKey = 'item';
+            break;
+        case 2:
+        case 3:
+            entity.charKey = 'enemy';
+            break;
+    }
+    entities.push(entity);
 }
 
 function getRealRoomPos(room) {
@@ -195,7 +203,6 @@ function drawUI() {
     fillBox(0, 0, screenWidth - 1, 4, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
     drawBox(0, 4, screenWidth - 1, screenHeight - 8, charMap.uicorner, charMap.uivert, charMap.uihori);
     fillBox(0, screenHeight - 4, screenWidth - 1, 3, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
-
     drawText(0, screenWidth, 2, title, 1);
     drawText(1, screenWidth - 1, 3, version, 2);
     drawText(2, 6, screenHeight - 3, `HP: `);
@@ -210,13 +217,11 @@ function drawUI() {
 
 function mapPosToScreenPos(pos) {
     let playerScreenPos = [1 + Math.floor((screenWidth - 2) / 2), 5 + Math.floor((screenHeight - 9) / 2)];
-
     return pos.map((p, i) => playerScreenPos[i] + p - player.position[i]);
 }
 
 function drawMap() {
     fillRect(1, 5, screenWidth - 2, screenHeight - 9, charMap.empty);
-
     let firstRoom = rooms.length > 1 ? rooms.length - 2 : 0;
     for (let i = firstRoom; i < rooms.length; i++) {
         let realRoomPos = mapPosToScreenPos(getRealRoomPos(rooms[i]));
@@ -249,8 +254,15 @@ function drawMap() {
             i === rooms.length - 1 ? 'door' : 'empty'
         );
     }
+}
 
+function drawEntities() {
+    let playerScreenPos = [1 + Math.floor((screenWidth - 2) / 2), 5 + Math.floor((screenHeight - 9) / 2)];
     drawGameChar(playerScreenPos[0], playerScreenPos[1], 'player');
+    for (let i = 0; i < entities.length; i++) {
+        let entityPos = mapPosToScreenPos(entities[i].position);
+        drawGameChar(entityPos[0], entityPos[1], entities[i].charKey);
+    }
 }
 
 function checkCollision(pos) {
@@ -293,7 +305,6 @@ function onKeyDown(e) {
             redraw = true;
         }
     }
-
     if (redraw) {
         updateGame();
         drawGame();
@@ -302,6 +313,7 @@ function onKeyDown(e) {
 
 function drawGame() {
     drawMap();
+    drawEntities();
     drawUI();
     updateScreen();
 }
@@ -315,9 +327,6 @@ function updateGame() {
 }
 
 document.body.addEventListener('keydown', onKeyDown);
-
-/* Generate map */
 rooms.push(generateRoom());
-
 player.health = player.maxHealth;
 drawGame();
