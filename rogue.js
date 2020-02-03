@@ -168,6 +168,13 @@ function generateRoom(previousRoom) {
                 if (generatedWeight <= runningTotal + entityWeights[i].weight) {
                     entity.type = entityWeights[i].type;
                     entity.charKey = entityWeights[i].key;
+                    if (entity.type === 1) {
+                        entity.atk = Math.max(1, rand(Math.ceil(player.def * 0.8), Math.max(Math.ceil(player.def * 1.5), 2)));
+                        entity.def = rand(0, player.atk - 1);
+                        entity.maxHealth = rand(2, player.maxHealth / 2);
+                        entity.health = entity.maxHealth;
+                        entity.name = "monster";
+                    }
                     break;
                 }
                 runningTotal += entityWeights[i].weight;
@@ -285,28 +292,37 @@ function checkCollision(pos, blockDoors = false) {
 }
 
 function onKeyDown(e) {
+    if (player.health <= 0) return;
     let keyString = e.key || e.code;
     if (!keyString) return;
     keyString = keyString.toLowerCase();
-    let redraw = false;
-    if (keyString === "arrowleft" || keyString === "a") {
-        if (!checkCollision([player.position[0]-1, player.position[1]])) {
-            player.position[0]--;
-            redraw = true;
-        }
+    let redraw = false, newPos = null;
+    if (keyString === "space" || keyString === " ") {
+        redraw = true;
+    } else if (keyString === "arrowleft" || keyString === "a") {
+        newPos = [player.position[0] - 1, player.position[1]];
     } else if (keyString === "arrowright" || keyString === "d") {
-        if (!checkCollision([player.position[0]+1, player.position[1]])) {
-            player.position[0]++;
-            redraw = true;
-        }
+        newPos = [player.position[0] + 1, player.position[1]];
     } else if (keyString === "arrowup" || keyString === "w") {
-        if (!checkCollision([player.position[0], player.position[1]-1])) {
-            player.position[1]--;
-            redraw = true;
-        }
+        newPos = [player.position[0], player.position[1] - 1];
     } else if (keyString === "arrowdown" || keyString === "s") {
-        if (!checkCollision([player.position[0], player.position[1]+1])) {
-            player.position[1]++;
+        newPos = [player.position[0], player.position[1] + 1];
+    }
+    if (newPos !== null) {
+        let collision = checkCollision(newPos);
+        if (collision === false) {
+            player.position = newPos;
+            redraw = true;
+        } else if (collision !== true) {
+            let target = collision;
+            target.fighting = true;
+            let playerDmg = Math.max(0, player.atk - target.def);
+            let targetDmg = Math.max(0, target.atk - player.def);
+            tooltip = `You slash at the ${target.name} for ${playerDmg} damage\n`
+                + `The ${target.name} hits you for ${targetDmg} damage`;
+            target.health -= playerDmg;
+            if (target.health > 0) player.health -= targetDmg;
+            if (player.health <= 0) tooltip += "\nGAME OVER";
             redraw = true;
         }
     }
@@ -317,6 +333,7 @@ function onKeyDown(e) {
 }
 
 function updateGame() {
+    if (player.health <= 0) return;
     if (entities.filter(e => e.type === 1).length === 0) {
         let doorPos = rooms[rooms.length - 1].realExitPos;
         if (player.position[0] === doorPos[0] && player.position[1] === doorPos[1]) {
@@ -354,6 +371,10 @@ function updateGame() {
                 }
                 break;
             case 1:
+                if (entities[i].health <= 0) {
+                    entitiesToRemove.push(entities[i]);
+                    continue;
+                }
                 if (entities[i].fighting) continue;
                 if (entities[i].direction === undefined) entities[i].direction = rand(0, 4);
                 let newPos = [entities[i].position[0], entities[i].position[1]];
