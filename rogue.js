@@ -193,7 +193,7 @@ function generateRoom(previousRoom) {
 }
 
 function draw() {
-    fillRect(1, 5, screenWidth - 2, screenHeight - 9, charMap.empty);
+    fillRect(1, 5, screenWidth - 2, screenHeight - 8, charMap.empty);
     let firstRoom = rooms.length > 1 ? rooms.length - 2 : 0;
     for (let i = firstRoom; i < rooms.length; i++) {
         let realRoomPos = rooms[i].realPos.map((p, i) => player.screenPos[i] + p - player.position[i]);;
