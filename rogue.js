@@ -308,10 +308,12 @@ function onKeyDown(e) {
 }
 
 function updateGame() {
-    let doorPos = rooms[rooms.length - 1].realExitPos;
-    if (player.position[0] === doorPos[0] && player.position[1] === doorPos[1]) {
-        rooms.push(generateRoom(rooms[rooms.length - 1]));
-        player.currentRoom++;
+    if (entities.filter(e => e.type === 1).length === 0) {
+        let doorPos = rooms[rooms.length - 1].realExitPos;
+        if (player.position[0] === doorPos[0] && player.position[1] === doorPos[1]) {
+            rooms.push(generateRoom(rooms[rooms.length - 1]));
+            player.currentRoom++;
+        }
     }
 
     entities = entities.filter(e => rooms.indexOf(e.room) !== -1 && rooms.indexOf(e.room) >= rooms.length - 2);
