@@ -121,7 +121,7 @@ function generateRoom(previousRoom) {
     newRoom.size = [width, height];
     if (previousRoom) {
         newRoom.previous = previousRoom;
-        let entranceDirection = (previousRoom.exit[0] + 2) % 4;\
+        let entranceDirection = (previousRoom.exit[0] + 2) % 4;
         let corridorLength = rand(2, 8);
         let prevDoorPos = previousRoom.exit[1];
         if (entranceDirection % 2 === 0) {
