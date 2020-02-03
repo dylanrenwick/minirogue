@@ -63,10 +63,10 @@ function drawText(x, x2, y, t, align = 0, color) {
 
     switch(align) {
         case 1:
-            x = areaWidth / 2 - textWidth / 2;
+            x += Math.floor(areaWidth / 2 - textWidth / 2);
             break;
         case 2:
-            x = areaWidth - textWidth
+            x += areaWidth - textWidth
             break;
     }
 
@@ -250,7 +250,7 @@ function draw() {
         fillBox(4, screenHeight - 9, screenWidth - 8, 4, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
         let lines = tooltip.split('\n');
         for (let i = 0; i < lines.length; i++) {
-            drawText(5, screenWidth - 10, screenHeight + (lines.length === 1 ? -7 : -8 + i), lines[i], 1);
+            drawText(5, screenWidth - 5, screenHeight + (lines.length === 1 ? -7 : -8 + i), lines[i].trim(), 1);
         }
         tooltip = "";
     }
