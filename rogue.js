@@ -190,28 +190,12 @@ function generateFeature(room) {
     entities.push(entity);
 }
 
-function drawUI() {
-    fillBox(0, 0, screenWidth - 1, 4, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
-    drawBox(0, 4, screenWidth - 1, screenHeight - 8, charMap.uicorner, charMap.uivert, charMap.uihori);
-    fillBox(0, screenHeight - 4, screenWidth - 1, 3, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
-    drawText(0, screenWidth, 2, title, 1);
-    drawText(1, screenWidth - 1, 3, version, 2);
-    drawText(2, 6, screenHeight - 3, `HP: `);
-    let hpAmt = player.health / player.maxHealth;
-    let hpColor = "#0f0";
-    if (hpAmt < 0.25) hpColor = "#f00";
-    else if (hpAmt < 0.6) hpColor = "#f80";
-    drawText(6, 12, screenHeight - 3, `${player.health}/${player.maxHealth}`, 0, hpColor)
-    drawText(screenWidth - 10, screenWidth - 1, screenHeight - 3, `ATK: ${player.atk}`);
-    drawText(screenWidth - 10, screenWidth - 1, screenHeight - 2, `DEF: ${player.def}`);
-}
-
 function mapPosToScreenPos(pos) {
     let playerScreenPos = [1 + Math.floor((screenWidth - 2) / 2), 5 + Math.floor((screenHeight - 9) / 2)];
     return pos.map((p, i) => playerScreenPos[i] + p - player.position[i]);
 }
 
-function drawMap() {
+function draw() {
     fillRect(1, 5, screenWidth - 2, screenHeight - 9, charMap.empty);
     let firstRoom = rooms.length > 1 ? rooms.length - 2 : 0;
     for (let i = firstRoom; i < rooms.length; i++) {
@@ -245,15 +229,29 @@ function drawMap() {
             i === rooms.length - 1 ? 'door' : 'empty'
         );
     }
-}
-
-function drawEntities() {
+    
     let playerScreenPos = [1 + Math.floor((screenWidth - 2) / 2), 5 + Math.floor((screenHeight - 9) / 2)];
     drawGameChar(playerScreenPos[0], playerScreenPos[1], 'player');
     for (let i = 0; i < entities.length; i++) {
         let entityPos = mapPosToScreenPos(entities[i].position);
         drawGameChar(entityPos[0], entityPos[1], entities[i].charKey);
     }
+
+    fillBox(0, 0, screenWidth - 1, 4, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
+    drawBox(0, 4, screenWidth - 1, screenHeight - 8, charMap.uicorner, charMap.uivert, charMap.uihori);
+    fillBox(0, screenHeight - 4, screenWidth - 1, 3, charMap.empty, charMap.uicorner, charMap.uivert, charMap.uihori);
+    drawText(0, screenWidth, 2, title, 1);
+    drawText(1, screenWidth - 1, 3, version, 2);
+    drawText(2, 6, screenHeight - 3, `HP: `);
+    let hpAmt = player.health / player.maxHealth;
+    let hpColor = "#0f0";
+    if (hpAmt < 0.25) hpColor = "#f00";
+    else if (hpAmt < 0.6) hpColor = "#f80";
+    drawText(6, 12, screenHeight - 3, `${player.health}/${player.maxHealth}`, 0, hpColor)
+    drawText(screenWidth - 10, screenWidth - 1, screenHeight - 3, `ATK: ${player.atk}`);
+    drawText(screenWidth - 10, screenWidth - 1, screenHeight - 2, `DEF: ${player.def}`);
+
+    updateScreen();
 }
 
 function checkCollision(pos, blockDoors = false) {
@@ -300,15 +298,8 @@ function onKeyDown(e) {
     }
     if (redraw) {
         updateGame();
-        drawGame();
+        draw();
     }
-}
-
-function drawGame() {
-    drawMap();
-    drawEntities();
-    drawUI();
-    updateScreen();
 }
 
 function updateGame() {
@@ -347,4 +338,4 @@ function updateGame() {
 document.body.addEventListener('keydown', onKeyDown);
 rooms.push(generateRoom());
 player.health = player.maxHealth;
-drawGame();
+draw();
