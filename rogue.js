@@ -274,6 +274,13 @@ function checkCollision(pos, blockDoors = false) {
         if ((pos[0] === roomPos[0] || pos[0] === roomPos[0] + r.size[0]) && pos[1] >= roomPos[1] && pos[1] < roomPos[1] + r.size[1]) return true;
         if ((pos[1] === roomPos[1] || pos[1] === roomPos[1] + r.size[1]) && pos[0] >= roomPos[0] && pos[0] < roomPos[0] + r.size[0]) return true;
     }
+
+    for (let i = 0; i < entities.length; i++) {
+        if (entities[i].type === 0) continue;
+        if ((pos[0] === entities[i].position[0] && pos[1] === entities[i].position[1])) return entities[i];
+    }
+
+    return false;
 }
 
 function onKeyDown(e) {
