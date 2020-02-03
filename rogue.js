@@ -151,7 +151,7 @@ function generateRoom(previousRoom) {
                 ? newRoom.realPos[1] + (newRoom.entrance[0] > 1 ? newRoom.size[1] : 0)
                 : newRoom.realPos[1] + newRoom.entrance[1] + 1)
         ]
-        let features = Math.max(rand(0, 2) * (1 + Math.floor((newRoom.size[0] * newRoom.size[1] / 250) ** 2)), 1);
+        let features = Math.max(rand(0, 3) * (1 + Math.floor((newRoom.size[0] * newRoom.size[1] / 250) ** 2)), 1);
         for (let i = 0; i < features; i++) {
             let entity = {
                 position: randInRect(newRoom.realPos, newRoom.size),
