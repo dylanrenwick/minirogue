@@ -163,7 +163,7 @@ function generateRoom(previousRoom) {
             let weightTotals = entityWeights.map(e => e.weight).reduce((a, b) => a + b, 0);
             let generatedWeight = rand(0, weightTotals) + 1;
             for (let i = 0, runningTotal = 0; i < entityWeights.length; i++) {
-                if (runningTotal + generatedWeight <= entityWeights[i].weight) {
+                if (generatedWeight <= runningTotal + entityWeights[i].weight) {
                     entity.type = entityWeights[i].type;
                     entity.charKey = entityWeights[i].key;
                     break;
