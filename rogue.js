@@ -159,7 +159,8 @@ function generateRoom(previousRoom) {
                 update: null,
                 charKey: 'empty',
                 room: newRoom,
-                type: null
+                type: null,
+                fighting: false
             };
             let weightTotals = entityWeights.map(e => e.weight).reduce((a, b) => a + b, 0);
             let generatedWeight = rand(0, weightTotals) + 1;
@@ -345,6 +346,7 @@ function updateGame() {
                 }
                 break;
             case 1:
+                if (entities[i].fighting) continue;
                 if (entities[i].direction === undefined) entities[i].direction = rand(0, 4);
                 let newPos = [entities[i].position[0], entities[i].position[1]];
                 newPos[entities[i].direction % 2] += Math.floor(entities[i].direction / 2) * 2 - 1;
